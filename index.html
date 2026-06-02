@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SyncCast Pro - Cinematic Studio & Transfer</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Oswald:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #18191B;       
+            --surface: #242426;       
+            --surface-light: #2F3033; 
+            --primary: #B89B72;       
+            --primary-hover: #CDB38B;
+            --text-main: #E6E2D6;     
+            --text-muted: #858480;    
+            --border: #38383A;        
+            --accent-red: #A85751;    
+            --accent-green: #6B8E23;
+            
+            --font-title: 'Oswald', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            font-family: var(--font-sans);
+            display: flex; align-items: center; justify-content: center; 
+            min-height: 100vh; padding: 20px; overflow-x: hidden;
+        }
+
+        /* 介面容器 */
+        .container {
+            background: var(--surface); width: 100%; max-width: 500px;
+            padding: 40px; border-radius: 8px; border: 1px solid var(--border);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5); text-align: center;
+            position: relative;
+        }
+
+        .hidden { display: none !important; }
+
+        h1 { font-family: var(--font-title); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px; }
+        .subtitle { font-family: var(--font-mono); font-size: 10px; color: var(--primary); letter-spacing: 2px; margin-bottom: 30px; }
+
+        /* 按鈕與輸入框 */
+        button {
+            width: 100%; padding: 15px; margin-bottom: 10px;
+            background: var(--surface-light); border: 1px solid var(--border);
+            color: var(--text-main); font-family: var(--font-sans);
+            text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s;
+            border-radius: 4px; font-size: 12px;
+        }
+        button.primary { background: var(--primary); color: #121212; font-weight: bold; border: none; }
+        button:hover { filter: brightness(1.2); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        input[type="text"] {
+            width: 100%; padding: 15px; background: #121213; border: 1px solid var(--border);
+            color: var(--primary); font-family: var(--font-mono); font-size: 24px;
+            text-align: center; margin-bottom: 20px; outline: none;
+        }
+
+        /* 狀態列 */
+        .status-bar { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin: 15px 0; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-red); }
+        .dot.active { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
+
+        /* 檔案傳輸區 */
+        .file-box {
+            margin-top: 20px; padding: 20px; border: 2px dashed var(--border);
+            border-radius: 6px; background: rgba(0,0,0,0.2);
+        }
+        .file-box:hover { border-color: var(--primary); }
+        #file-progress { width: 100%; height: 4px; background: #121213; margin-top: 15px; border-radius: 2px; overflow: hidden; display: none; }
+        #file-progress-inner { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
+
+        /* 影片預覽 */
+        .preview-wrap {
+            width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 4px;
+            margin: 20px 0; overflow: hidden; position: relative; border: 1px solid var(--border);
+        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 檔案列表樣式 */
+        .file-info { font-size: 11px; font-family: var(--font-mono); margin-top: 10px; color: var(--primary); }
+
+        /* 雙向語音按鈕樣式 */
+        .controls { display: flex; gap: 10px; margin-top: 10px; }
+        .controls button { flex: 1; }
+        .mic-active { color: var(--primary); border-color: var(--primary); background: rgba(184,155,114,0.1); }
+    </style>
+</head>
+<body>
+
+    <!-- 初始選擇畫面 -->
+    <div id="setup-view" class="container">
+        <h1>SyncCast Pro</h1>
+        <p class="subtitle">Broadcast • Voice • P2P Transfer</p>
+        <button class="primary" onclick="initRole('host')">以主持人身分啟動 (Host)</button>
+        <button onclick="initRole('viewer')">加入現有會話 (Join)</button>
+    </div>
+
+    <!-- 主持人介面 -->
+    <div id="host-view" class="container hidden">
+        <h1>Studio</h1>
+        <p class="subtitle">Broadcast Control</p>
+        <div class="status-bar"><div id="host-status-dot" class="dot"></div> ID: <span id="display-id" style="color:var(--text-main)">----</span></div>
+        
+        <div class="preview-wrap">
+            <video id="local-video" autoplay playsinline muted></video>
+        </div>
+
+        <button id="share-btn" class="primary" onclick="startScreenShare()">分享螢幕畫面</button>
+        
+        <div class="controls">
+            <button id="host-mic-btn" onclick="toggleMic()">開啟麥克風</button>
+        </div>
+
+        <div class="file-box" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)">
+            <p style="font-size: 11px; color: var(--text-muted);">拖放檔案至此處發送給所有觀眾</p>
+            <input type="file" id="file-input" hidden onchange="handleFileSelect(this)">
+            <button style="margin-top:10px; padding: 8px;" onclick="document.getElementById('file-input').click()">選擇檔案</button>
+            <div id="host-file-info" class="file-info"></div>
+            <div id="file-progress"><div id="file-progress-inner"></div></div>
+        </div>
+    </div>
+
+    <!-- 觀眾介面 -->
+    <div id="viewer-view" class="container hidden">
+        <h1>Connect</h1>
+        <p class="subtitle">Enter Studio ID</p>
+        <input type="text" id="join-id" placeholder="EX: A8B2">
+        <button class="primary" id="connect-btn" onclick="joinStudio()">連接至工作室</button>
+        
+        <div id="viewer-player" class="hidden">
+            <div class="preview-wrap">
+                <video id="remote-video" autoplay playsinline></video>
+            </div>
+            <div class="controls">
+                <button id="viewer-mic-btn" onclick="toggleMic()">開啟麥克風</button>
+            </div>
+            <div id="received-files" class="file-box">
+                <p style="font-size: 11px; color: var(--text-muted);">收到的檔案</p>
+                <div id="file-list" class="file-info">尚未收到檔案</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let peer = null;
+        let conn = null; // 對於觀眾是單一連線，對於主持人是連線陣列
+        let connections = []; 
+        let localStream = null;
+        let micStream = null;
+        let isMicOn = false;
+
+        const ID_PREFIX = "SC-PRO-";
+
+        // --- 初始化角色 ---
+        async function initRole(role) {
+            document.getElementById('setup-view').classList.add('hidden');
+            if (role === 'host') {
+                document.getElementById('host-view').classList.remove('hidden');
+                setupHost();
+            } else {
+                document.getElementById('viewer-view').classList.remove('hidden');
+            }
+        }
+
+        // --- 主持人邏輯 ---
+        function setupHost() {
+            const shortId = Math.random().toString(36).substr(2, 4).toUpperCase();
+            peer = new Peer(ID_PREFIX + shortId);
+            
+            peer.on('open', id => {
+                document.getElementById('display-id').innerText = shortId;
+                document.getElementById('host-status-dot').classList.add('active');
+            });
+
+            peer.on('connection', c => {
+                connections.push(c);
+                c.on('open', () => {
+                    console.log("觀眾已連接:", c.peer);
+                    if (localStream) peer.call(c.peer, localStream);
+                });
+                c.on('data', data => handleIncomingData(data, c));
+            });
+
+            peer.on('call', call => {
+                // 接收觀眾語音
+                call.answer();
+                call.on('stream', remoteAudioStream => {
+                    playAudioStream(remoteAudioStream);
+                });
+            });
+        }
+
+        // --- 觀眾邏輯 ---
+        function joinStudio() {
+            const inputId = document.getElementById('join-id').value.toUpperCase();
+            if (!inputId) return;
+
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(ID_PREFIX + inputId);
+                setupViewerConnection(conn);
+            });
+
+            peer.on('call', call => {
+                call.answer();
+                call.on('stream', stream => {
+                    document.getElementById('viewer-player').classList.remove('hidden');
+                    document.getElementById('connect-btn').classList.add('hidden');
+                    document.getElementById('join-id').classList.add('hidden');
+                    document.getElementById('remote-video').srcObject = stream;
+                });
+            });
+        }
+
+        function setupViewerConnection(c) {
+            c.on('open', () => {
+                console.log("已成功連接主持人");
+                document.getElementById('viewer-player').classList.remove('hidden');
+            });
+            c.on('data', data => handleIncomingData(data, c));
+        }
+
+        // --- 螢幕共享 ---
+        async function startScreenShare() {
+            try {
+                localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                document.getElementById('local-video').srcObject = localStream;
+                
+                // 撥打給所有已連接的觀眾
+                connections.forEach(c => {
+                    peer.call(c.peer, localStream);
+                });
+            } catch (err) {
+                console.error("無法分享螢幕:", err);
+            }
+        }
+
+        // --- 麥克風控制 ---
+        async function toggleMic() {
+            if (!isMicOn) {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    isMicOn = true;
+                    updateMicUI(true);
+                    
+                    // 將語音發送給對方
+                    const target = (conn) ? ID_PREFIX + document.getElementById('join-id').value.toUpperCase() : null;
+                    if (target) {
+                        peer.call(target, micStream);
+                    } else {
+                        connections.forEach(c => peer.call(c.peer, micStream));
+                    }
+                } catch (e) { alert("無法取得麥克風權限"); }
+            } else {
+                micStream.getTracks().forEach(t => t.stop());
+                isMicOn = false;
+                updateMicUI(false);
+            }
+        }
+
+        function updateMicUI(on) {
+            const btns = [document.getElementById('host-mic-btn'), document.getElementById('viewer-mic-btn')];
+            btns.forEach(btn => {
+                if (btn) {
+                    btn.innerText = on ? "麥克風已開啟" : "開啟麥克風";
+                    on ? btn.classList.add('mic-active') : btn.classList.remove('mic-active');
+                }
+            });
+        }
+
+        // --- 檔案傳輸邏輯 ---
+        let receivedChunks = [];
+        let incomingFileInfo = null;
+
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) transferFile(file);
+        }
+
+        function dragOverHandler(ev) { ev.preventDefault(); }
+        function dropHandler(ev) {
+            ev.preventDefault();
+            const file = ev.dataTransfer.files[0];
+            if (file) transferFile(file);
+        }
+
+        async function transferFile(file) {
+            const CHUNK_SIZE = 16384; // 16KB per chunk
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            
+            // 通知所有觀眾準備接收檔案
+            const meta = { type: 'FILE_START', name: file.name, size: file.size, mime: file.type };
+            connections.forEach(c => c.send(meta));
+
+            const buffer = await file.arrayBuffer();
+            const progressBg = document.getElementById('file-progress');
+            const progressInner = document.getElementById('file-progress-inner');
+            progressBg.style.display = 'block';
+
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = buffer.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+                connections.forEach(c => c.send(chunk));
+                
+                // 更新進度條
+                const percent = ((i + 1) / totalChunks) * 100;
+                progressInner.style.width = percent + '%';
+            }
+
+            connections.forEach(c => c.send({ type: 'FILE_END' }));
+            document.getElementById('host-file-info').innerText = `完成發送: ${file.name}`;
+            setTimeout(() => progressBg.style.display = 'none', 2000);
+        }
+
+        function handleIncomingData(data, connection) {
+            // 處理二進位檔案數據
+            if (data instanceof ArrayBuffer) {
+                receivedChunks.push(data);
+                return;
+            }
+
+            // 處理 JSON 指令
+            if (data.type === 'FILE_START') {
+                receivedChunks = [];
+                incomingFileInfo = data;
+                document.getElementById('file-list').innerText = `正在接收: ${data.name}...`;
+            } else if (data.type === 'FILE_END') {
+                const blob = new Blob(receivedChunks, { type: incomingFileInfo.mime });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = incomingFileInfo.name;
+                link.innerText = `下載 ${incomingFileInfo.name} (${formatBytes(incomingFileInfo.size)})`;
+                link.style.display = 'block';
+                link.style.color = 'var(--primary)';
+                link.style.marginTop = '10px';
+                
+                const list = document.getElementById('file-list');
+                if (list.innerText.includes('尚未')) list.innerHTML = '';
+                list.appendChild(link);
+            }
+        }
+
+        // --- 輔助函式 ---
+        function playAudioStream(stream) {
+            const audio = document.createElement('audio');
+            audio.autoplay = true;
+            audio.srcObject = stream;
+            document.body.appendChild(audio);
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
