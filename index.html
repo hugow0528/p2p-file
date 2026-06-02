@@ -3,69 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncCast Transfer Pro - Stable P2P</title>
+    <title>P2P File-Sharing - Cinematic Studio</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Oswald:wght@500&family=Space+Mono&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 
     <style>
         :root {
-            --bg: #121213; --surface: #1E1E20; --primary: #B89B72;
-            --text: #E6E2D6; --text-dim: #858480; --border: #333335;
+            --bg: #18191B;
+            --surface: #242426;
+            --primary: #B89B72;
+            --primary-hover: #CDB38B;
+            --text: #E6E2D6;
+            --text-dim: #858480;
+            --border: #38383A;
+            --accent-red: #A85751;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .container { background: var(--surface); width: 100%; max-width: 480px; padding: 40px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #202225 0%, var(--bg) 80%);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 20px;
+        }
+
+        .container {
+            background: var(--surface);
+            width: 100%; max-width: 500px;
+            padding: 50px 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            text-align: center;
+            position: relative;
+        }
+
         .hidden { display: none !important; }
-        h1 { font-family: 'Oswald', sans-serif; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
-        .subtitle { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--primary); margin-bottom: 30px; text-transform: uppercase; }
-        button { width: 100%; padding: 16px; margin-bottom: 12px; background: #2A2A2D; border: 1px solid var(--border); color: var(--text); font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.3s; text-transform: uppercase; font-size: 13px; }
-        button.primary { background: var(--primary); color: #121213; border: none; }
-        button:hover { filter: brightness(1.2); }
-        input[type="text"] { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border); color: var(--primary); font-family: 'Space Mono', monospace; font-size: 20px; text-align: center; margin-bottom: 20px; border-radius: 6px; }
-        .drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 40px 20px; margin-top: 20px; cursor: pointer; transition: 0.3s; background: rgba(0,0,0,0.2); }
-        .drop-zone:hover { border-color: var(--primary); }
-        .progress-container { width: 100%; height: 6px; background: #000; border-radius: 3px; margin-top: 20px; display: none; overflow: hidden; }
+
+        h1 { font-family: 'Oswald', sans-serif; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 8px; color: var(--text); font-size: 28px; }
+        .subtitle { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--primary); letter-spacing: 3px; margin-bottom: 40px; text-transform: uppercase; opacity: 0.9; }
+
+        /* UI 元件 */
+        button {
+            width: 100%; padding: 18px; margin-bottom: 12px;
+            background: #2F3033; border: 1px solid var(--border);
+            color: var(--text); font-weight: 500; cursor: pointer;
+            border-radius: 4px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            text-transform: uppercase; font-size: 12px; letter-spacing: 2px;
+        }
+        button.primary { background: var(--primary); color: #121213; border: none; font-weight: 600; }
+        button:hover:not(:disabled) { background: #3A3B3E; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        button.primary:hover { background: var(--primary-hover); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        input[type="text"] {
+            width: 100%; padding: 20px; background: #121213; border: 1px solid #000;
+            color: var(--primary); font-family: 'Space Mono', monospace; font-size: 24px;
+            text-align: center; margin-bottom: 24px; border-radius: 6px;
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.8); outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* 傳輸區域 */
+        .drop-zone {
+            border: 1px dashed var(--border); border-radius: 6px;
+            padding: 40px 20px; margin-top: 20px; cursor: pointer;
+            transition: 0.3s; background: rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .drop-zone:hover { border-color: var(--primary); background: rgba(184,155,114,0.05); }
+        
+        .progress-container { width: 100%; height: 4px; background: #101011; border-radius: 2px; margin-top: 25px; display: none; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
-        #file-list { margin-top: 30px; text-align: left; }
-        .file-item { background: #262628; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .file-item img { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; border: 1px solid #444; }
-        .file-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; word-break: break-all; }
-        .file-meta { font-size: 11px; color: var(--text-dim); font-family: 'Space Mono', monospace; }
-        .download-link { display: inline-block; margin-top: 10px; color: var(--primary); text-decoration: none; font-size: 12px; font-weight: 600; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 4px; }
-        .status { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 15px; }
+
+        /* 檔案預覽列表 */
+        #file-list { margin-top: 30px; text-align: left; max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        #file-list::-webkit-scrollbar { width: 4px; }
+        #file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .file-item {
+            background: #1C1D1F; padding: 20px; border-radius: 4px; margin-bottom: 12px;
+            border: 1px solid var(--border); border-left: 3px solid var(--primary);
+            animation: slideIn 0.4s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .file-item img { max-width: 100%; border-radius: 2px; margin-top: 15px; display: block; border: 1px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .file-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; word-break: break-all; letter-spacing: 0.5px; }
+        .file-meta { font-size: 10px; color: var(--text-dim); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .download-link { 
+            display: inline-block; margin-top: 15px; color: var(--primary); 
+            text-decoration: none; font-size: 11px; font-weight: 600;
+            border: 1px solid var(--primary); padding: 6px 12px; border-radius: 3px;
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .download-link:hover { background: var(--primary); color: #121213; }
+
+        .status-info { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 20px; letter-spacing: 1px; }
+        .room-tag { color: var(--primary); font-size: 20px; display: block; margin-top: 8px; }
     </style>
 </head>
 <body>
 
     <div id="view-start" class="container">
-        <h1>SyncCast P2P</h1>
-        <p class="subtitle">Secure File Transfer</p>
-        <button class="primary" onclick="initRole('host')">建立房間 (Host)</button>
-        <button onclick="initRole('viewer')">加入房間 (Join)</button>
+        <h1>P2P File-Sharing</h1>
+        <p class="subtitle">Secure Cinematic Studio</p>
+        <button class="primary" onclick="initRole('host')">啟動傳輸工作室 (Host)</button>
+        <button onclick="initRole('viewer')">加入連線 (Join)</button>
     </div>
 
     <div id="view-main" class="container hidden">
-        <h1 id="role-title">Studio</h1>
-        <p class="subtitle" id="status-text">INITIALIZING...</p>
+        <h1 id="role-title">File Studio</h1>
+        <p class="subtitle" id="status-text">INITIALIZING NETWORK...</p>
         
+        <!-- 主持人端控制 -->
         <div id="host-controls" class="hidden">
-            <div class="status">房間 ID: <span id="room-id" style="color:var(--primary); font-size: 18px;">----</span></div>
-            <div class="drop-zone" onclick="document.getElementById('file-input').click()" id="drop-area">
-                <p style="font-size: 13px;">點擊或拖放檔案至此</p>
+            <div class="status-info">
+                ACCESS CODE
+                <span id="room-id" class="room-tag">----</span>
+            </div>
+            <div class="drop-zone" id="drop-area" onclick="document.getElementById('file-input').click()">
+                <p style="font-size: 12px; letter-spacing: 1px;">DROP FILES HERE OR TAP TO UPLOAD</p>
+                <p style="font-size: 9px; color:var(--text-dim); margin-top:12px; letter-spacing: 2px;">SUPPORTING IMAGE, PDF, TEXT & BINARY</p>
                 <input type="file" id="file-input" hidden onchange="handleFileSelect(this)">
             </div>
         </div>
 
+        <!-- 接收端控制 -->
         <div id="viewer-controls" class="hidden">
-            <input type="text" id="join-id" placeholder="輸入房號">
-            <button class="primary" onclick="connectToHost()">連線</button>
+            <input type="text" id="join-id" placeholder="ENTER CODE" maxlength="4">
+            <button class="primary" onclick="connectToHost()">建立加密連線</button>
         </div>
 
+        <!-- 進度條 -->
         <div class="progress-container" id="progress-container">
             <div class="progress-bar" id="progress-bar"></div>
         </div>
 
+        <!-- 檔案列表 -->
         <div id="file-list"></div>
     </div>
 
@@ -75,144 +154,197 @@
         let conn = null;
         let receivedChunks = [];
         let incomingInfo = null;
-        const PREFIX = "SC-STABLE-";
+
+        const PREFIX = "P2P-SHARE-";
+
+        // 你的 ExpressTURN 憑證配置
+        const peerConfig = {
+            debug: 2,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    {
+                        urls: 'turn:free.expressturn.com:3478',
+                        username: '000000002095770377',
+                        credential: 'WRj6jzappq8JEF2RmzpyCDMxy1s='
+                    }
+                ],
+                iceCandidatePoolSize: 10
+            }
+        };
 
         function initRole(role) {
             document.getElementById('view-start').classList.add('hidden');
             document.getElementById('view-main').classList.remove('hidden');
+            
             if (role === 'host') {
+                document.getElementById('role-title').innerText = "Host Studio";
                 document.getElementById('host-controls').classList.remove('hidden');
                 startHost();
             } else {
+                document.getElementById('role-title').innerText = "Receiver";
                 document.getElementById('viewer-controls').classList.remove('hidden');
-                document.getElementById('status-text').innerText = "READY";
+                document.getElementById('status-text').innerText = "WAITING FOR INPUT";
             }
         }
 
+        // --- HOST 邏輯 ---
         function startHost() {
             const shortId = Math.random().toString(36).substr(2, 4).toUpperCase();
-            peer = new Peer(PREFIX + shortId);
-            peer.on('open', () => {
+            peer = new Peer(PREFIX + shortId, peerConfig);
+
+            peer.on('open', (id) => {
                 document.getElementById('room-id').innerText = shortId;
-                document.getElementById('status-text').innerText = "等待連線...";
+                document.getElementById('status-text').innerText = "STUDIO ONLINE / WAITING";
             });
-            peer.on('connection', c => {
+
+            peer.on('connection', (c) => {
                 connections.push(c);
-                document.getElementById('status-text').innerText = `已連線: ${connections.length}`;
-                c.on('data', data => handleData(data, c));
+                document.getElementById('status-text').innerText = `PEERS CONNECTED: ${connections.length}`;
+                
+                c.on('data', data => handleIncomingData(data, c));
+                c.on('close', () => {
+                    connections = connections.filter(item => item !== c);
+                    document.getElementById('status-text').innerText = `PEERS CONNECTED: ${connections.length}`;
+                });
             });
         }
 
+        // --- JOIN 邏輯 ---
         function connectToHost() {
-            const id = document.getElementById('join-id').value.toUpperCase();
-            peer = new Peer();
+            const inputId = document.getElementById('join-id').value.toUpperCase();
+            if (!inputId) return;
+
+            peer = new Peer(peerConfig);
             peer.on('open', () => {
-                conn = peer.connect(PREFIX + id, { reliable: true });
-                document.getElementById('status-text').innerText = "正在連線...";
+                conn = peer.connect(PREFIX + inputId, { reliable: true });
+                document.getElementById('status-text').innerText = "NEGOTIATING...";
+                
                 conn.on('open', () => {
-                    document.getElementById('status-text').innerText = "連線成功";
+                    document.getElementById('status-text').innerText = "ENCRYPTED CONNECTION ESTABLISHED";
                     document.getElementById('viewer-controls').classList.add('hidden');
                 });
-                conn.on('data', data => handleData(data, conn));
+
+                conn.on('data', data => handleIncomingData(data, conn));
+                conn.on('close', () => {
+                    alert("連線已中斷");
+                    location.reload();
+                });
             });
         }
 
-        function handleFileSelect(input) { if (input.files[0]) transferFile(input.files[0]); }
+        // --- 傳輸邏輯 ---
+        function handleFileSelect(input) {
+            if (input.files[0]) transferFile(input.files[0]);
+        }
 
-        // 拖放處理
+        // 拖放功能
         const dropArea = document.getElementById('drop-area');
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
-            document.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
+            dropArea.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
         });
-        dropArea.addEventListener('drop', e => { transferFile(e.dataTransfer.files[0]); });
+        dropArea.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file) transferFile(file);
+        });
 
         async function transferFile(file) {
             const targets = conn ? [conn] : connections;
-            if (targets.length === 0) return alert("無連線");
+            if (targets.length === 0) return alert("沒有已連線的接收者");
 
             const CHUNK_SIZE = 16384; 
             const buffer = await file.arrayBuffer();
             const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
 
-            // 發送開始訊息
-            const startMsg = { type: 'START', name: file.name, size: file.size, mime: file.type };
-            targets.forEach(t => t.send(startMsg));
+            // 1. 發送 Meta 資訊
+            const meta = { type: 'FILE_START', name: file.name, size: file.size, mime: file.type };
+            targets.forEach(t => t.send(meta));
 
+            // 2. 顯示進度條
+            const progBar = document.getElementById('progress-bar');
             document.getElementById('progress-container').style.display = 'block';
-            const bar = document.getElementById('progress-bar');
 
+            // 3. 分塊發送並執行緩衝保護 (Throttling)
             for (let i = 0; i < totalChunks; i++) {
-                const start = i * CHUNK_SIZE;
-                const chunk = buffer.slice(start, start + CHUNK_SIZE);
+                const chunk = buffer.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
                 
-                // 核心修復：節流發送，避免緩衝區溢位
                 for (let t of targets) {
-                    // 如果底層 DataChannel 緩衝太多，暫停一下
+                    // 如果緩衝區超過 1MB，則等待網路釋放空間
                     while (t.dataChannel && t.dataChannel.bufferedAmount > 1000000) {
                         await new Promise(r => setTimeout(r, 50));
                     }
                     t.send(chunk);
                 }
 
-                if (i % 10 === 0 || i === totalChunks - 1) {
-                    bar.style.width = ((i + 1) / totalChunks * 100) + '%';
+                if (i % 5 === 0 || i === totalChunks - 1) {
+                    progBar.style.width = ((i + 1) / totalChunks * 100) + '%';
                 }
             }
 
-            targets.forEach(t => t.send({ type: 'END' }));
-            setTimeout(() => document.getElementById('progress-container').style.display = 'none', 1000);
-            addFileToList(file, null, true);
+            // 4. 發送結束標記
+            targets.forEach(t => t.send({ type: 'FILE_END' }));
+            
+            setTimeout(() => {
+                document.getElementById('progress-container').style.display = 'none';
+                progBar.style.width = '0%';
+            }, 1000);
+
+            addFileToUI(file, null, true);
         }
 
-        function handleData(data, connection) {
-            // 如果收到的是二進位數據
+        function handleIncomingData(data, connection) {
+            // 處理二進位數據
             if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
                 receivedChunks.push(data);
-                // 更新接收進度
                 if (incomingInfo) {
                     const receivedSize = receivedChunks.length * 16384;
-                    const percent = Math.min(100, Math.floor((receivedSize / incomingInfo.size) * 100));
-                    document.getElementById('status-text').innerText = `接收中: ${percent}%`;
+                    const percent = Math.min(99, Math.floor((receivedSize / incomingInfo.size) * 100));
+                    document.getElementById('status-text').innerText = `DOWNLOADING: ${percent}%`;
                 }
                 return;
             }
 
-            // 如果收到的是控制訊息
-            if (data.type === 'START') {
+            // 處理指令數據
+            if (data.type === 'FILE_START') {
                 receivedChunks = [];
                 incomingInfo = data;
-                document.getElementById('status-text').innerText = "開始接收...";
-            } else if (data.type === 'END') {
+                document.getElementById('status-text').innerText = "INCOMING FILE...";
+            } else if (data.type === 'FILE_END') {
                 const blob = new Blob(receivedChunks, { type: incomingInfo.mime });
-                addFileToList(blob, incomingInfo, false);
-                document.getElementById('status-text').innerText = "接收完成";
+                addFileToUI(blob, incomingInfo, false);
+                document.getElementById('status-text').innerText = "TRANSFER COMPLETE";
                 receivedChunks = [];
+                incomingInfo = null;
             }
         }
 
-        function addFileToList(blobOrFile, info, isSent) {
+        function addFileToUI(blobOrFile, info, isSent) {
             const list = document.getElementById('file-list');
             const item = document.createElement('div');
             item.className = 'file-item';
+
             const name = info ? info.name : blobOrFile.name;
             const size = info ? info.size : blobOrFile.size;
             const mime = info ? info.mime : blobOrFile.type;
             const url = URL.createObjectURL(blobOrFile);
 
-            let preview = '';
+            let previewHTML = '';
             if (mime.startsWith('image/')) {
-                preview = `<img src="${url}">`;
+                previewHTML = `<img src="${url}" alt="preview">`;
             } else if (mime === 'application/pdf') {
-                preview = `<div style="margin-top:10px; font-size:12px; color:var(--primary)">📄 PDF 文件</div>`;
+                previewHTML = `<div style="margin-top:10px; font-size:11px; color:var(--primary); font-family:'Space Mono'">[ DOCUMENT_PDF ]</div>`;
+            } else if (mime.startsWith('text/')) {
+                previewHTML = `<div style="margin-top:10px; font-size:11px; color:var(--primary); font-family:'Space Mono'">[ TEXT_DATA ]</div>`;
             }
 
             item.innerHTML = `
-                <div class="file-meta">${isSent ? '已發送' : '已接收'}</div>
+                <div class="file-meta">${isSent ? 'Outgoing' : 'Incoming'}</div>
                 <div class="file-name">${name}</div>
-                <div class="file-meta">${(size/1024).toFixed(1)} KB | ${mime}</div>
-                ${preview}
-                <a href="${url}" download="${name}" class="download-link">儲存檔案</a>
+                <div class="file-meta">${(size/1024).toFixed(1)} KB // ${mime}</div>
+                ${previewHTML}
+                <a href="${url}" download="${name}" class="download-link">Save to Disk</a>
             `;
+            
             list.insertBefore(item, list.firstChild);
         }
     </script>
