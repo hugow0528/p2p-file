@@ -3,87 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncCast Transfer - P2P File Studio</title>
+    <title>SyncCast Transfer Pro - Stable P2P</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Oswald:wght@500&family=Space+Mono&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 
     <style>
         :root {
-            --bg: #121213;
-            --surface: #1E1E20;
-            --primary: #B89B72;
-            --text: #E6E2D6;
-            --text-dim: #858480;
-            --border: #333335;
-            --accent: #6B8E23;
+            --bg: #121213; --surface: #1E1E20; --primary: #B89B72;
+            --text: #E6E2D6; --text-dim: #858480; --border: #333335;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            display: flex; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 20px;
-        }
-
-        .container {
-            background: var(--surface); width: 100%; max-width: 480px;
-            padding: 40px; border-radius: 12px; border: 1px solid var(--border);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center;
-        }
-
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container { background: var(--surface); width: 100%; max-width: 480px; padding: 40px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
         .hidden { display: none !important; }
-
-        h1 { font-family: 'Oswald', sans-serif; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; color: var(--text); }
+        h1 { font-family: 'Oswald', sans-serif; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
         .subtitle { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--primary); margin-bottom: 30px; text-transform: uppercase; }
-
-        /* 按鈕與輸入 */
-        button {
-            width: 100%; padding: 16px; margin-bottom: 12px;
-            background: #2A2A2D; border: 1px solid var(--border);
-            color: var(--text); font-weight: 600; cursor: pointer;
-            border-radius: 6px; transition: 0.3s; text-transform: uppercase; font-size: 13px;
-        }
+        button { width: 100%; padding: 16px; margin-bottom: 12px; background: #2A2A2D; border: 1px solid var(--border); color: var(--text); font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.3s; text-transform: uppercase; font-size: 13px; }
         button.primary { background: var(--primary); color: #121213; border: none; }
-        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
-
-        input[type="text"] {
-            width: 100%; padding: 16px; background: #000; border: 1px solid var(--border);
-            color: var(--primary); font-family: 'Space Mono', monospace; font-size: 20px;
-            text-align: center; margin-bottom: 20px; border-radius: 6px;
-        }
-
-        /* 傳輸區域 */
-        .drop-zone {
-            border: 2px dashed var(--border); border-radius: 8px;
-            padding: 40px 20px; margin-top: 20px; cursor: pointer;
-            transition: 0.3s; background: rgba(0,0,0,0.2);
-        }
-        .drop-zone:hover { border-color: var(--primary); background: rgba(184,155,114,0.05); }
-        
+        button:hover { filter: brightness(1.2); }
+        input[type="text"] { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border); color: var(--primary); font-family: 'Space Mono', monospace; font-size: 20px; text-align: center; margin-bottom: 20px; border-radius: 6px; }
+        .drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 40px 20px; margin-top: 20px; cursor: pointer; transition: 0.3s; background: rgba(0,0,0,0.2); }
+        .drop-zone:hover { border-color: var(--primary); }
         .progress-container { width: 100%; height: 6px; background: #000; border-radius: 3px; margin-top: 20px; display: none; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-
-        /* 檔案列表與預覽 */
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
         #file-list { margin-top: 30px; text-align: left; }
-        .file-item {
-            background: #262628; padding: 15px; border-radius: 6px; margin-bottom: 10px;
-            border-left: 4px solid var(--primary); animation: fadeIn 0.4s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .file-item img { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; background: #000; }
+        .file-item { background: #262628; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .file-item img { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; border: 1px solid #444; }
         .file-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; word-break: break-all; }
         .file-meta { font-size: 11px; color: var(--text-dim); font-family: 'Space Mono', monospace; }
-        .download-link { 
-            display: inline-block; margin-top: 10px; color: var(--primary); 
-            text-decoration: none; font-size: 12px; font-weight: 600;
-            border: 1px solid var(--primary); padding: 4px 10px; border-radius: 4px;
-        }
-        .download-link:hover { background: var(--primary); color: #000; }
-
+        .download-link { display: inline-block; margin-top: 10px; color: var(--primary); text-decoration: none; font-size: 12px; font-weight: 600; border: 1px solid var(--primary); padding: 4px 10px; border-radius: 4px; }
         .status { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 15px; }
     </style>
 </head>
@@ -91,159 +40,148 @@
 
     <div id="view-start" class="container">
         <h1>SyncCast P2P</h1>
-        <p class="subtitle">Private File Transfer Studio</p>
-        <button class="primary" onclick="initRole('host')">建立傳輸房 (Host)</button>
+        <p class="subtitle">Secure File Transfer</p>
+        <button class="primary" onclick="initRole('host')">建立房間 (Host)</button>
         <button onclick="initRole('viewer')">加入房間 (Join)</button>
     </div>
 
     <div id="view-main" class="container hidden">
         <h1 id="role-title">Studio</h1>
-        <p class="subtitle" id="status-text">Initializing...</p>
+        <p class="subtitle" id="status-text">INITIALIZING...</p>
         
         <div id="host-controls" class="hidden">
-            <div class="status">您的房間 ID: <span id="room-id" style="color:var(--primary); font-size: 18px;">----</span></div>
-            <div class="drop-zone" onclick="document.getElementById('file-input').click()" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)">
-                <p style="font-size: 13px;">拖放檔案至此 或 點擊選擇</p>
-                <p style="font-size: 10px; color:var(--text-dim); margin-top:10px;">支援 JPG, PDF, TXT 等所有格式</p>
+            <div class="status">房間 ID: <span id="room-id" style="color:var(--primary); font-size: 18px;">----</span></div>
+            <div class="drop-zone" onclick="document.getElementById('file-input').click()" id="drop-area">
+                <p style="font-size: 13px;">點擊或拖放檔案至此</p>
                 <input type="file" id="file-input" hidden onchange="handleFileSelect(this)">
             </div>
         </div>
 
         <div id="viewer-controls" class="hidden">
-            <input type="text" id="join-id" placeholder="輸入 4 位房號">
-            <button class="primary" onclick="connectToHost()">連線並接收檔案</button>
+            <input type="text" id="join-id" placeholder="輸入房號">
+            <button class="primary" onclick="connectToHost()">連線</button>
         </div>
 
         <div class="progress-container" id="progress-container">
             <div class="progress-bar" id="progress-bar"></div>
         </div>
 
-        <div id="file-list">
-            <!-- 傳輸成功的檔案會顯示在這裡 -->
-        </div>
+        <div id="file-list"></div>
     </div>
 
     <script>
         let peer = null;
-        let connections = []; // 主持人端：存儲所有觀眾
-        let conn = null;        // 觀眾端：存儲與主持人的連線
+        let connections = [];
+        let conn = null;
         let receivedChunks = [];
         let incomingInfo = null;
-
-        const PREFIX = "SC-FILE-";
+        const PREFIX = "SC-STABLE-";
 
         function initRole(role) {
             document.getElementById('view-start').classList.add('hidden');
             document.getElementById('view-main').classList.remove('hidden');
-            
             if (role === 'host') {
-                document.getElementById('role-title').innerText = "Host Studio";
                 document.getElementById('host-controls').classList.remove('hidden');
                 startHost();
             } else {
-                document.getElementById('role-title').innerText = "Join Studio";
                 document.getElementById('viewer-controls').classList.remove('hidden');
-                document.getElementById('status-text').innerText = "READY TO CONNECT";
+                document.getElementById('status-text').innerText = "READY";
             }
         }
 
-        // --- 主持人邏輯 ---
         function startHost() {
             const shortId = Math.random().toString(36).substr(2, 4).toUpperCase();
             peer = new Peer(PREFIX + shortId);
-
-            peer.on('open', (id) => {
+            peer.on('open', () => {
                 document.getElementById('room-id').innerText = shortId;
-                document.getElementById('status-text').innerText = "等待觀眾連線...";
+                document.getElementById('status-text').innerText = "等待連線...";
             });
-
-            peer.on('connection', (c) => {
+            peer.on('connection', c => {
                 connections.push(c);
-                document.getElementById('status-text').innerText = `已連線觀眾: ${connections.length}`;
+                document.getElementById('status-text').innerText = `已連線: ${connections.length}`;
                 c.on('data', data => handleData(data, c));
-                c.on('close', () => {
-                    connections = connections.filter(conn => conn !== c);
-                    document.getElementById('status-text').innerText = `已連線觀眾: ${connections.length}`;
-                });
             });
         }
 
-        // --- 觀眾邏輯 ---
         function connectToHost() {
             const id = document.getElementById('join-id').value.toUpperCase();
-            if (!id) return;
-
             peer = new Peer();
             peer.on('open', () => {
-                conn = peer.connect(PREFIX + id);
+                conn = peer.connect(PREFIX + id, { reliable: true });
                 document.getElementById('status-text').innerText = "正在連線...";
-                
                 conn.on('open', () => {
-                    document.getElementById('status-text').innerText = "已連線至主持人";
+                    document.getElementById('status-text').innerText = "連線成功";
                     document.getElementById('viewer-controls').classList.add('hidden');
                 });
-
                 conn.on('data', data => handleData(data, conn));
-                conn.on('close', () => alert("主持人已斷開連線"));
             });
         }
 
-        // --- 檔案處理 ---
-        function handleFileSelect(input) {
-            if (input.files.length > 0) transferFile(input.files[0]);
-        }
+        function handleFileSelect(input) { if (input.files[0]) transferFile(input.files[0]); }
 
-        function dragOverHandler(ev) { ev.preventDefault(); }
-        function dropHandler(ev) {
-            ev.preventDefault();
-            if (ev.dataTransfer.files.length > 0) transferFile(ev.dataTransfer.files[0]);
-        }
+        // 拖放處理
+        const dropArea = document.getElementById('drop-area');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+            document.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
+        });
+        dropArea.addEventListener('drop', e => { transferFile(e.dataTransfer.files[0]); });
 
         async function transferFile(file) {
-            if (connections.length === 0 && !conn) {
-                alert("尚未建立連線，無法傳送");
-                return;
-            }
-
             const targets = conn ? [conn] : connections;
-            const CHUNK_SIZE = 16384; 
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            
-            // 1. 發送元數據
-            const meta = { type: 'START', name: file.name, size: file.size, mime: file.type };
-            targets.forEach(t => t.send(meta));
+            if (targets.length === 0) return alert("無連線");
 
-            // 2. 發送二進位數據
+            const CHUNK_SIZE = 16384; 
             const buffer = await file.arrayBuffer();
-            const progContainer = document.getElementById('progress-container');
-            const progBar = document.getElementById('progress-bar');
-            progContainer.style.display = 'block';
+            const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
+
+            // 發送開始訊息
+            const startMsg = { type: 'START', name: file.name, size: file.size, mime: file.type };
+            targets.forEach(t => t.send(startMsg));
+
+            document.getElementById('progress-container').style.display = 'block';
+            const bar = document.getElementById('progress-bar');
 
             for (let i = 0; i < totalChunks; i++) {
-                const chunk = buffer.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                targets.forEach(t => t.send(chunk));
+                const start = i * CHUNK_SIZE;
+                const chunk = buffer.slice(start, start + CHUNK_SIZE);
                 
-                const percent = ((i + 1) / totalChunks) * 100;
-                progBar.style.width = percent + '%';
+                // 核心修復：節流發送，避免緩衝區溢位
+                for (let t of targets) {
+                    // 如果底層 DataChannel 緩衝太多，暫停一下
+                    while (t.dataChannel && t.dataChannel.bufferedAmount > 1000000) {
+                        await new Promise(r => setTimeout(r, 50));
+                    }
+                    t.send(chunk);
+                }
+
+                if (i % 10 === 0 || i === totalChunks - 1) {
+                    bar.style.width = ((i + 1) / totalChunks * 100) + '%';
+                }
             }
 
-            // 3. 發送結束訊號
             targets.forEach(t => t.send({ type: 'END' }));
-            
-            setTimeout(() => { progContainer.style.display = 'none'; progBar.style.width = '0%'; }, 1000);
-            addFileToList(file, null, true); // 在本地顯示已發送
+            setTimeout(() => document.getElementById('progress-container').style.display = 'none', 1000);
+            addFileToList(file, null, true);
         }
 
         function handleData(data, connection) {
-            if (data instanceof ArrayBuffer) {
+            // 如果收到的是二進位數據
+            if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
                 receivedChunks.push(data);
+                // 更新接收進度
+                if (incomingInfo) {
+                    const receivedSize = receivedChunks.length * 16384;
+                    const percent = Math.min(100, Math.floor((receivedSize / incomingInfo.size) * 100));
+                    document.getElementById('status-text').innerText = `接收中: ${percent}%`;
+                }
                 return;
             }
 
+            // 如果收到的是控制訊息
             if (data.type === 'START') {
                 receivedChunks = [];
                 incomingInfo = data;
-                document.getElementById('status-text').innerText = `正在接收: ${data.name}`;
+                document.getElementById('status-text').innerText = "開始接收...";
             } else if (data.type === 'END') {
                 const blob = new Blob(receivedChunks, { type: incomingInfo.mime });
                 addFileToList(blob, incomingInfo, false);
@@ -256,35 +194,26 @@
             const list = document.getElementById('file-list');
             const item = document.createElement('div');
             item.className = 'file-item';
-
             const name = info ? info.name : blobOrFile.name;
             const size = info ? info.size : blobOrFile.size;
             const mime = info ? info.mime : blobOrFile.type;
             const url = URL.createObjectURL(blobOrFile);
 
-            let previewHTML = '';
-            // 圖片預覽
+            let preview = '';
             if (mime.startsWith('image/')) {
-                previewHTML = `<img src="${url}" alt="preview">`;
+                preview = `<img src="${url}">`;
+            } else if (mime === 'application/pdf') {
+                preview = `<div style="margin-top:10px; font-size:12px; color:var(--primary)">📄 PDF 文件</div>`;
             }
 
             item.innerHTML = `
-                <div class="file-meta">${isSent ? 'SENT' : 'RECEIVED'}</div>
+                <div class="file-meta">${isSent ? '已發送' : '已接收'}</div>
                 <div class="file-name">${name}</div>
-                <div class="file-meta">${formatBytes(size)} | ${mime.toUpperCase()}</div>
-                ${previewHTML}
-                <a href="${url}" download="${name}" class="download-link">下載檔案 / OPEN</a>
+                <div class="file-meta">${(size/1024).toFixed(1)} KB | ${mime}</div>
+                ${preview}
+                <a href="${url}" download="${name}" class="download-link">儲存檔案</a>
             `;
-            
             list.insertBefore(item, list.firstChild);
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
     </script>
 </body>
